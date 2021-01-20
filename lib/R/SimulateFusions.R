@@ -240,9 +240,9 @@ for (jj in 1: nsims) {
 			end.exons <- as.numeric(unlist(strsplit(as.character(Gene.Table[ix.genename.table, 8]), ",")))
 			strand <- as.character(Gene.Table[ix.genename.table, 3])
 			if (strand == "+") {
-				tmp <- cumsum((end.exons - start.exons))
+				tmp <- cumsum((end.exons - start.exons + 1))
 			} else {
-				tmp <- cumsum(rev(end.exons - start.exons))
+				tmp <- cumsum(rev(end.exons - start.exons + 1))
 			}
 			if (length(tmp) > 1) {
 				junction1 <- sample(tmp,1)
@@ -255,10 +255,10 @@ for (jj in 1: nsims) {
 			end.exons <- as.numeric(unlist(strsplit(as.character(Gene.Table[ix.genename.table, 8]), ",")))
 			strand <- as.character(Gene.Table[ix.genename.table, 3])
 			if (strand == "+") {
-				tmp <- cumsum((end.exons - start.exons)) 
+				tmp <- cumsum((end.exons - start.exons + 1)) 
 				tmp <- tmp[-length(tmp)]
 			} else {
-				tmp <- cumsum(rev(end.exons - start.exons)) 
+				tmp <- cumsum(rev(end.exons - start.exons + 1)) 
 				tmp <- tmp[-length(tmp)]
 			}
 			if (length(tmp) > 1) {
