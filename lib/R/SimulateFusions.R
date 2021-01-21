@@ -1,4 +1,11 @@
 ### simulate data [revised].
+### modified on 2021/01/21
+### modified by Ashley Zhou
+### add functionality to use given transcript pairs
+### add functionality to randomly select from given transcript pairs
+### add output to include breakpoint genomic positions
+### fix bug for junction position
+### exclude last exon end as possible 5' junction
 
 vars.tmp <- commandArgs()
 vars <- vars.tmp[length(vars.tmp)]
@@ -21,7 +28,9 @@ background.data_2 <- as.character(split.vars[14])
 nreads.background <- as.numeric(split.vars[15])
 dbfolder <- as.character(split.vars[16])
 refid <- as.character(split.vars[17])
+fusionlist <- as.character(split.vars[18])
   
+all_transcripts <- readRDS(fusionlist)
 mysyndata <- file.exists(file.path(dbfolder, "data", refid, "EnsemblGene.Transcripts.RData"))
 if (mysyndata == T) {
   cat("[EricScript simulator] Load genes data ...")
@@ -95,6 +104,7 @@ ix.goodseq <- which((nchar(sequences) > 2*minlength) & (TranscriptNames %in% gen
 sequences <- sequences[ix.goodseq]
 GeneNames <- GeneNames[ix.goodseq]
 TranscriptNames <- TranscriptNames[ix.goodseq] 
+sel_transcripts <- all_transcripts[all_transcripts$tx1 %in% TranscriptNames & all_transcripts$tx2 %in% TranscriptNames,]
 
 
 formatted.count.tmp <-paste("00000", seq(1, nsims), sep = "")
@@ -122,38 +132,45 @@ for (jj in 1: nsims) {
 	if (flag.background == 1) {
 
     myrandomseed <- round(runif(1, 1, 1000))
-	  system(paste("seqtk sample -s", myrandomseed, " background.data_1 ", nreads.background, " > ", file.path(outputfolder, "background.reads.1.fq") , sep = ""))
-	  system(paste("seqtk sample -s", myrandomseed, " background.data_2 ", nreads.background, " > ", file.path(outputfolder, "background.reads.2.fq") , sep = ""))
+    	  command1 = paste("seqtk sample -s", myrandomseed, " ",background.data_1," ", nreads.background, " > ", file.path(outputfolder, "background.reads.1.fq") , sep = "")
+	  system(command1)
+	  system(paste("seqtk sample -s", myrandomseed, " ", background.data_2, " ", nreads.background, " > ", file.path(outputfolder, "background.reads.2.fq") , sep = ""))
 	}
 	
 	ix.gene1 <- rep(0,ngenefusion)
 	ix.gene2 <- rep(0,ngenefusion)
 	strand1 <- rep(0,ngenefusion)
 	strand2 <- rep(0,ngenefusion)
-	flag <- 1
-	mycount <- 0
-	while (flag == 1) {
-		trans1 <- sample(TranscriptNames, ngenefusion)
-		for (ii in 1: ngenefusion) {
-			ix.gene1[ii] <- which(TranscriptNames == trans1[ii])
-			strand1[ii] <- strandok[which(genenameok == trans1[ii])]
-		}
-		gene1 <- GeneNames[ix.gene1]
-		trans2 <- sample(TranscriptNames, ngenefusion)
-		for (ii in 1: ngenefusion) {
-			ix.gene2[ii] <- which(TranscriptNames == trans2[ii])
-			strand2[ii] <- strandok[which(genenameok == trans2[ii])]
-		}
-		gene2 <- GeneNames[ix.gene2]
-		ix.gene12 <- c(ix.gene1, ix.gene2)
-		if (length(unique(ix.gene12)) == 2*ngenefusion & length(unique(GeneNames[ix.gene12])) == 2*ngenefusion) {
-			flag <- 0
-		} else
-		{flag <- 1}
+	if (ngenefusion > nrow(sel_transcripts) {
+		stop("Number of fusions requested exceeds selection pool\n")
+	} else if(ngenefusion == nrow(sel_transcripts){
+		sampled_index = c(1:ngenefusion)
+	} else {
+		sampled_index = sample(1:nrow(sel_transcripts), ngenefusion, replace = F)
 	}
+	trans1 <- sel_transcripts$tx1[sampled_index]
+	for (ii in 1: ngenefusion) {
+		ix.gene1[ii] <- which(TranscriptNames == trans1[ii])
+		strand1[ii] <- strandok[which(genenameok == trans1[ii])]
+	}
+	gene1 <- GeneNames[ix.gene1]
+	print("gene1\n")
+	print(gene1)
+	trans2 <- sel_transcripts$tx2[sampled_index]
+	for (ii in 1: ngenefusion) {
+		ix.gene2[ii] <- which(TranscriptNames == trans2[ii])
+		strand2[ii] <- strandok[which(genenameok == trans2[ii])]
+	}
+	gene2 <- GeneNames[ix.gene2]
+	print("gene2\n")
+	print(gene2)
+	ix.gene12 <- c(ix.gene1, ix.gene2)
+	print("ix12\n")
+	print(ix.gene12)
 	
 	sequence1 <- sequences[ix.gene1]
 	sequence2 <- sequences[ix.gene2]
+	cat("Done getting sequences...\n")
 	
 	if ("BE" %in% dataset) {
 		
@@ -200,6 +217,7 @@ for (jj in 1: nsims) {
 			if (verbose == 0) {
 				system(paste("wgsim -d ", ins.size, " -r 0.0001 -R 0.001 -s ", sd.inssize, " -N ", mynreads, " -1 ", readlength, " -2 ", readlength," ", file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), paste("myref", formatted.count.fusions[i], ".fa", sep = "")), " " ,file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.1.fq")," ", file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.2.fq"), " 2>> ", file.path(outputfolder, "wgsim.log"), " 1>> ", file.path(outputfolder, "wgsim.log"), sep = ""))
 			} else {
+				cat("starting wgsim...\n")
 				system(paste("wgsim -d ", ins.size, " -r 0.0001 -R 0.001 -s ", sd.inssize, " -N ", mynreads, " -1 ", readlength, " -2 ", readlength," ", file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), paste("myref", formatted.count.fusions[i], ".fa", sep = "")), " " ,file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.1.fq")," ", file.path(outputfolder, "BE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.2.fq"), sep = ""))
 				
 			}
@@ -228,6 +246,8 @@ for (jj in 1: nsims) {
 		Gene.Table <- EnsemblGene.Structures
 		junction1.tot <- c()
 		junction2.tot <- c()
+		bp1.tot <- c()
+		bp2.tot <- c()
 		id.fusions <- rep(0, length(sequence1))
 		sequence.fusions <- rep(0, length(sequence1))
 		sequence.fusions.50bp <- rep(0, length(sequence1))
@@ -240,33 +260,49 @@ for (jj in 1: nsims) {
 			end.exons <- as.numeric(unlist(strsplit(as.character(Gene.Table[ix.genename.table, 8]), ",")))
 			strand <- as.character(Gene.Table[ix.genename.table, 3])
 			if (strand == "+") {
-				tmp <- cumsum((end.exons - start.exons))
+				tmp <- cumsum((end.exons - start.exons + 1))
+				tmp <- tmp[-length(tmp)]
 			} else {
-				tmp <- cumsum(rev(end.exons - start.exons))
+				tmp <- cumsum(rev(end.exons - start.exons + 1))
+				tmp <- tmp[-length(tmp)]
 			}
 			if (length(tmp) > 1) {
 				junction1 <- sample(tmp,1)
+				junction_index = which(junction1==tmp)
+				if (strand == "+" ) {
+					bp1 = end.exons[junction_index]
+				} else {
+					bp1 = end.exons[length(end.exons) - junction_index + 1]
+				}
 			} else {
 				junction1 <- tmp
 			}
 			junction1.tot <- c(junction1.tot, junction1)
+			bp1.tot <- c(bp1.tot, bp1)
 			ix.genename.table <- which(genename.table == trans2[i])
 			start.exons <- as.numeric(unlist(strsplit(as.character(Gene.Table[ix.genename.table, 7]), ",")))
 			end.exons <- as.numeric(unlist(strsplit(as.character(Gene.Table[ix.genename.table, 8]), ",")))
 			strand <- as.character(Gene.Table[ix.genename.table, 3])
 			if (strand == "+") {
-				tmp <- cumsum((end.exons - start.exons)) 
+				tmp <- cumsum((end.exons - start.exons + 1)) 
 				tmp <- tmp[-length(tmp)]
 			} else {
-				tmp <- cumsum(rev(end.exons - start.exons)) 
+				tmp <- cumsum(rev(end.exons - start.exons + 1)) 
 				tmp <- tmp[-length(tmp)]
-			}
+			}			
 			if (length(tmp) > 1) {
 				junction2 <- sample(tmp,1)
+				junction_index = which(junction2==tmp)
+				if (strand == "+"){
+					bp2 = end.exons[junction_index]
+				} else {
+					bp2 = end.exons[length(end.exons) - junction_index + 1]
+				}
 			} else {
 				junction2 <- 1
 			}
 			junction2.tot <- c(junction2.tot, junction2)
+			bp2.tot <- c(bp2.tot, bp2)
 			sequence.fusions[i] <- paste(substr(sequence1[i], 1, junction1), substr(sequence2[i], junction2 + 1, nchar(sequence2[i])), sep = "")
 			sequence.fusions.50bp[i] <- paste(substr(sequence1[i], (junction1 - 49), junction1), substr(sequence2[i], junction2 + 1, (junction2 + 50)), sep = "")
 			id.fusions[i] <- paste(">", paste(gene1[i], gene2[i], sep = "----"), sep = "")
@@ -285,7 +321,9 @@ for (jj in 1: nsims) {
 		GeneFusions[[6]] <- mycoverage
 		GeneFusions[[7]] <- trans1
 		GeneFusions[[8]] <- trans2
-		names(GeneFusions) <- c("gene1", "gene2", "junction1", "junction2", "junctionseq", "coverage", "trans1", "trans2")
+		GeneFusions[[9]] <- bp1.tot
+		GeneFusions[[10]] <- bp2.tot
+		names(GeneFusions) <- c("gene1", "gene2", "junction1", "junction2", "junctionseq", "coverage", "trans1", "trans2", "bp1", "bp2")
 		save(GeneFusions, file = file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), "GeneFusions.RData"))
 		
 		
@@ -296,6 +334,7 @@ for (jj in 1: nsims) {
 			if (verbose == 0) {
 				system(paste("wgsim -d ", ins.size, " -r 0.0001 -R 0.001 -s ", sd.inssize, " -N ", mynreads, " -1 ", readlength, " -2 ", readlength," ", file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), paste("myref", formatted.count.fusions[i], ".fa", sep = "")), " " ,file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.1.fq")," ", file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.2.fq"), " 2>> ", file.path(outputfolder, "wgsim.log"), " 1>> ", file.path(outputfolder, "wgsim.log"), sep = ""))
 			} else {
+				cat("starting wgsim...\n")
 				system(paste("wgsim -d ", ins.size, " -r 0.0001 -R 0.001 -s ", sd.inssize, " -N ", mynreads, " -1 ", readlength, " -2 ", readlength," ", file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), paste("myref", formatted.count.fusions[i], ".fa", sep = "")), " " ,file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.1.fq")," ", file.path(outputfolder, "IE", "data", paste("sim", formatted.count[jj], sep = "_"), "out.reads.2.fq"), sep = ""))
 				
 			}
