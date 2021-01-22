@@ -272,7 +272,7 @@ for (jj in 1: nsims) {
 				if (strand == "+" ) {
 					bp1 = end.exons[junction_index]
 				} else {
-					bp1 = end.exons[length(end.exons) - junction_index + 1]
+					bp1 = start.exons[length(end.exons) - junction_index + 1]
 				}
 			} else {
 				junction1 <- tmp
@@ -294,9 +294,9 @@ for (jj in 1: nsims) {
 				junction2 <- sample(tmp,1)
 				junction_index = which(junction2==tmp)
 				if (strand == "+"){
-					bp2 = end.exons[junction_index]
+					bp2 = start.exons[junction_index + 1]
 				} else {
-					bp2 = end.exons[length(end.exons) - junction_index + 1]
+					bp2 = end.exons[length(end.exons) - junction_index ]
 				}
 			} else {
 				junction2 <- 1
