@@ -141,9 +141,9 @@ for (jj in 1: nsims) {
 	ix.gene2 <- rep(0,ngenefusion)
 	strand1 <- rep(0,ngenefusion)
 	strand2 <- rep(0,ngenefusion)
-	if (ngenefusion > nrow(sel_transcripts) {
+	if (ngenefusion > nrow(sel_transcripts)) {
 		stop("Number of fusions requested exceeds selection pool\n")
-	} else if(ngenefusion == nrow(sel_transcripts){
+	} else if(ngenefusion == nrow(sel_transcripts)){
 		sampled_index = c(1:ngenefusion)
 	} else {
 		sampled_index = sample(1:nrow(sel_transcripts), ngenefusion, replace = F)

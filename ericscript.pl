@@ -10,7 +10,7 @@ use Cwd 'abs_path';
 our ($verbose, $help, $man);
 our ($samplename, $reads_1, $reads_2, $outputfolder, $minreads, $removetemp, $nthreads, $MAPQ, $checkdb, $demo, $refid, $printdb, $downdb, $dbfolder, $recalc, $bwa_aln, $genomeref);
 our ($simulator, $readlength, $ntrim, $insize, $sd_insize, $ngenefusion, $min_cov, $max_cov, $nsims, $be, $ie, $background_1, $background_2, $nreads_background, $ensversion);
-our($calcstats, $resultsfolder, $datafolder, $algoname, $dataset, $normroc);
+our($calcstats, $resultsfolder, $datafolder, $algoname, $dataset, $normroc, $fusionlist);
 my @command_line = @ARGV;
 GetOptions('verbose|v'=>\$verbose, 
 'help|h'=>\$help, 
@@ -49,9 +49,9 @@ GetOptions('verbose|v'=>\$verbose,
 'algoname=s'=>\$algoname, 
 'dataset=s'=>\$dataset, 
 'normroc=i'=>\$normroc,
+'fusionlistRDS=s'=>\$fusionlist,
 'ensversion=i'=>\$ensversion,
 'MAPQ=f'=>\$MAPQ) or pod2usage ();
-'fusionlistRDS'=>\$fusionlist
 
 $help and pod2usage (-verbose=>1, -exitval=>1, -output=>\*STDOUT);
 $man and pod2usage (-verbose=>2, -exitval=>1, -output=>\*STDOUT);
