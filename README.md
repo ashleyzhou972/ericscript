@@ -1,3 +1,6 @@
+## MODIFIED ON 2021/01/21
+Added functionality to simulate fusions from given list
+
 ## EricScript Readme v2.1 (Feb 2016)
 Please feel free to email the author if you have any questions or issues.
 matteo.benelli AT gmail.com
